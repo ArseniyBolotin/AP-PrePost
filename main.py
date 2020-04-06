@@ -1,47 +1,23 @@
 from flask import Flask, request
+from flask_restful import Api, Resource
+
 from ap import AffinityPropagationFlask
 from prepost import PrePostFlask
 import numpy as np
 
-# import matplotlib.pyplot as plt
-
 app = Flask(__name__)
 
 
-class Algorithm:
-    cnt_id = -1
-
-    def __init__(self, algo_, params_={}):
-        Algorithm.cnt_id += 1
-        self.algo = algo_
-        self.id = Algorithm.cnt_id
-        self.results = None
-        self.params = params_
-
-    def start(self, data):
-        return self.algo(data, self.params)
-
-
-algorithms = []
-
-
-@app.route('/experiment/get_ids')
-def get_ids():
-    algorithms_dict = {}
-    for i in range(len(algorithms)):
-        algorithms_dict[algorithms[i].algo.__name__] = algorithms[i].id
-    return algorithms_dict
-
-
-def get_data(id):
-    if id == 0:
+# Mock of getting data
+def get_data(algo_id):
+    if algo_id == 0:
         N = 100
         n = N // 2
         np.random.seed(42)
         x = np.random.normal(0, 1, (n, 2))
         x = np.append(x, np.random.normal(10, 1, (n, 2)), axis=0)
         return x
-    if id == 1:
+    if algo_id == 1:
         return [['a', 'c', 'g', 'f'],
                 ['e', 'a', 'c', 'b'],
                 ['e', 'c', 'b', 'i'],
@@ -49,35 +25,71 @@ def get_data(id):
                 ['b', 'f', 'e', 'c', 'd']]
 
 
-@app.route('/experiment/<int:algorithm_id>/start')
-def run_algorithm(algorithm_id):
-    data = get_data(algorithm_id)
-    algorithms[algorithm_id].results = algorithms[algorithm_id].start(data)
-    return 'Success.'
+experiments = {}
+
+ALGORITHMS = [
+    (AffinityPropagationFlask, {'max_iter': '200', 'damping': '0.5'}),
+    (PrePostFlask, {'eps': '0.4'})
+]
 
 
-@app.route('/experiment/<int:algorithm_id>/get_results')
-def get_results(algorithm_id):
-    return str(algorithms[algorithm_id].results)
+class ExperimentList(Resource):
+    # get_ids
+    def get(self):
+        exp_dict = {}
+        for key in experiments:
+            exp_dict[key] = str(experiments[key])
+        return exp_dict
+
+    # set_params
+    def post(self, experiment_id):
+        if request.args.get('algo_id') is None:
+            return "Request does not contain algorithm id.", 400
+        if experiment_id not in experiments:
+            experiments[experiment_id] = Experiment()
+        exp = experiments[experiment_id]
+        algo_id = int(request.args.get('algo_id'))
+        exp.algorithm = ALGORITHMS[algo_id][0]
+        exp.params = ALGORITHMS[algo_id][1]
+        for param in exp.params:
+            if request.args.get(param) is not None:
+                exp.params[param] = request.args.get(param)
+        return "Success.", 200
 
 
-@app.route('/experiment/<int:algorithm_id>/set_params')
-def set_params(algorithm_id):
-    for param in algorithms[algorithm_id].params:
-        if request.args.get(param) is not None:
-            algorithms[algorithm_id].params[param] = request.args.get(param)
-    return algorithms[algorithm_id].params
+class Experiment(Resource):
+
+    def __init__(self, algorithm_=None, params_=None):
+        if params_ is None:
+            params_ = {}
+        self.results = None
+        self.algorithm = algorithm_
+        self.params = params_
+
+    def __str__(self):
+        return self.algorithm.__name__ + ' - ' + str(self.params)
+
+    # get_results
+    def get(self, experiment_id):
+        return str(experiments[experiment_id].results)
+
+    # start
+    def post(self, experiment_id):
+        algo_id = -1
+        for i in range(len(ALGORITHMS)):
+            if experiments[experiment_id].algorithm == ALGORITHMS[i][0]:
+                algo_id = i
+        data = get_data(algo_id)
+        experiments[experiment_id].results = experiments[
+            experiment_id].algorithm(data, experiments[experiment_id].params)
+        return "Success.", 200
 
 
-@app.route('/experiment/<int:algorithm_id>/get_params')
-def get_params(algorithm_id):
-    return algorithms[algorithm_id].params
-
+api = Api(app)
+api.add_resource(Experiment, '/experiments/<int:experiment_id>/start',
+                 '/experiments/<int:experiment_id>/get_results')
+api.add_resource(ExperimentList, '/get_ids',
+                 '/experiments/<int:experiment_id>/set_params')
 
 if __name__ == '__main__':
-    for f in [
-                (AffinityPropagationFlask, {'max_iter': '200', 'damping': '0.5'}),
-                (PrePostFlask, {'eps': '0.4'})
-    ]:
-        algorithms.append(Algorithm(f[0], f[1]))
     app.run()
