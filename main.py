@@ -23,6 +23,7 @@ def get_data(algo_id):
                 ['e', 'c', 'b', 'i'],
                 ['b', 'f', 'h'],
                 ['b', 'f', 'e', 'c', 'd']]
+    return None
 
 
 experiments = {}
@@ -33,7 +34,7 @@ ALGORITHMS = [
 ]
 
 
-class ExperimentList(Resource):
+class Parameters(Resource):
     # get_ids
     def get(self):
         exp_dict = {}
@@ -54,7 +55,7 @@ class ExperimentList(Resource):
         for param in exp.params:
             if request.args.get(param) is not None:
                 exp.params[param] = request.args.get(param)
-        return "Success.", 200
+        return "Parameters updated.", 200
 
 
 class Experiment(Resource):
@@ -70,11 +71,15 @@ class Experiment(Resource):
         return self.algorithm.__name__ + ' - ' + str(self.params)
 
     # get_results
-    def get(self, experiment_id):
-        return str(experiments[experiment_id].results)
+    def get(self, result_id):
+        if result_id not in experiments:
+            return "Experiment does not exist", 404
+        return str(experiments[result_id].results)
 
     # start
     def post(self, experiment_id):
+        if experiment_id not in experiments:
+            return "Experiment does not exist", 404
         algo_id = -1
         for i in range(len(ALGORITHMS)):
             if experiments[experiment_id].algorithm == ALGORITHMS[i][0]:
@@ -87,8 +92,8 @@ class Experiment(Resource):
 
 api = Api(app)
 api.add_resource(Experiment, '/experiments/<int:experiment_id>/start',
-                 '/experiments/<int:experiment_id>/get_results')
-api.add_resource(ExperimentList, '/get_ids',
+                 '/experiments/<int:result_id>/get_results')
+api.add_resource(Parameters, '/get_ids',
                  '/experiments/<int:experiment_id>/set_params')
 
 if __name__ == '__main__':
