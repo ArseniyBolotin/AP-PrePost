@@ -213,8 +213,3 @@ def PrePost(T, eps):
         # print('}')
         ans += '}\n'
     return ans
-
-
-def PrePostFlask(T, params):
-    eps = float(params['eps'])
-    return PrePost(T, eps)

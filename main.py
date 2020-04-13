@@ -1,9 +1,21 @@
 from flask import Flask, request
 from flask_restful import Api, Resource
 
-from ap import AffinityPropagationFlask
-from prepost import PrePostFlask
+from ap import AffinityPropagation
+from prepost import PrePost
 import numpy as np
+
+
+def AffinityPropagationFlask(data, params):
+    max_iter = int(params['max_iter'])
+    damping = float(params['damping'])
+    return AffinityPropagation(data, max_iter, damping)
+
+
+def PrePostFlask(data, params):
+    eps = float(params['eps'])
+    return PrePost(data, eps)
+
 
 app = Flask(__name__)
 

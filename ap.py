@@ -68,23 +68,3 @@ def AffinityPropagation(x, max_iter, damping):
     C = A + R
     labels = np.argmax(C, axis=1)
     return labels
-
-
-def AffinityPropagationFlask(x, params):
-    max_iter = int(params['max_iter'])
-    damping = float(params['damping'])
-    return AffinityPropagation(x, max_iter, damping)
-
-# print(labels)
-# plt.scatter(x[:, 0], x[:, 1], c=labels)
-# plt.show()
-# df = pd.read_csv('BreadBasket_DMS.csv')
-# df.head()
-# df = df.drop(['Date', 'Time'], axis=1)
-# df = df.groupby('Transaction')['Item'].apply(list)
-# eps = 0.01
-# T = []
-# for i in range(1, 9685):
-#     if i in df:
-#         T.append(df[i])
-# PrePost(T, eps)
