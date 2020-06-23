@@ -25,6 +25,7 @@ def update_r(n, S, A, R, damping):
         R_new *= 1 - damping
         R *= damping
         R += R_new
+        return False
 
 
 def update_a(n, A, R, damping):
@@ -44,6 +45,7 @@ def update_a(n, A, R, damping):
         A_new *= 1 - damping
         A *= damping
         A += A_new
+        return False
 
 
 def AffinityPropagation(x, max_iter, damping):
@@ -51,11 +53,13 @@ def AffinityPropagation(x, max_iter, damping):
     S = np.zeros((n, n))
     R = np.zeros((n, n))
     A = np.zeros((n, n))
+    mediana_list = []
     for i in range(n):
         for j in range(n):
+            mediana_list.append(similarity(x[i], x[j]))
             S[i, j] = similarity(x[i], x[j])
 
-    diagonal = np.median(S)
+    diagonal = np.median(mediana_list)
     for i in range(n):
         S[i, i] = diagonal
 

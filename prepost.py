@@ -1,5 +1,5 @@
 from functools import cmp_to_key
-
+from copy import copy, deepcopy
 
 class Node:
     def __init__(self, elem_="", parent_=None):
@@ -70,6 +70,7 @@ def transactions_convert(transactions, eps):
         converted.sort(key=cmp_to_key(
             lambda elem1, elem2: cmp_frequency(elem1, elem2, frequency)))
         transactions[j] = converted
+    return frequency
 
 
 def fp_tree(transactions):
@@ -173,12 +174,19 @@ def nlk_mining(nl_cur, min_supp):
     return F + nlk_mining(nl_next, min_supp)
 
 
-def PrePost(T, eps):
-
+def PrePost(data, eps):
+    T = deepcopy(data)
     minimum_support = len(T) * eps
 
     F = []
-    transactions_convert(T, eps)
+    elems = set()
+    for t in T:
+        for elem in t:
+            elems.add(elem)
+    list_elems = list(elems)
+    freq = transactions_convert(T, eps)
+    list_elems.sort(key=cmp_to_key(
+            lambda elem1, elem2: cmp_frequency(elem1, elem2, freq)))
     root = fp_tree(T)
     ppc_tree(root, 0, 0)
     nl1 = {}
@@ -199,17 +207,9 @@ def PrePost(T, eps):
     nl2 = nl2_construction(root, L1_dict, L1, nl1, minimum_support)
 
     F += nlk_mining(nl2, minimum_support)
-    ans = ""
-    for pack in F:
-        ans += '{'
-        # print('{', end='')
-        for i in range(len(pack)):
-            if i != len(pack) - 1:
-                # print(L1[pack[i]][1], end=', ')
-                ans += str(L1[pack[i]][1]) + ', '
-            else:
-                # print(L1[pack[i]][1], end='')
-                ans += str(L1[pack[i]][1])
-        # print('}')
-        ans += '}\n'
-    return ans
+    FindFrequences = []
+    for seq in F:
+        new_find = tuple(list_elems[elem] for elem in seq)
+        FindFrequences.append(new_find)
+    return FindFrequences
+
